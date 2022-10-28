@@ -1,0 +1,359 @@
+#!/bin/bash
+
+POSITIONAL_ARGS=()
+TYPES=""
+KEYSIZE=4096
+VALIDITY=10000
+
+
+function help() {
+	echo "Options:"
+	echo "  -k, --keysize <size>         Key bit size"
+	echo "  -v, --validity <days>        Validity number of days"
+	echo "  -p, --patch <patch>          Enable patch(extractNativeLibs)"
+	echo "  -q, --no-patch <patch>       Disable patch(allowOverwriteGit)"
+	echo "  -b, --list-patches <patch>   List patches"
+	echo "  app                          Build Android App"
+	echo "  wear                         Build Android Wear App"
+	echo "  all                          Build ALL Apps"
+}
+
+cp --force /patches/*.patch{,.disable} /tmp/patches/ &>/dev/null
+
+while [[ $# -gt 0 ]]; do
+	case $1 in
+		-k|--keysize|--keysize=*)
+			if [[ "$1" == "-k" || "$1" == "--keysize" ]]
+			then
+				KEYSIZE="$2"
+				shift
+				shift
+			else
+				KEYSIZE="${i#*=}"
+				shift
+			fi
+			;;
+		-v|--validity|--validity=*)
+			if [[ "$1" == "-v" || "$1" == "--validity" ]]
+			then
+				VALIDITY="$2"
+				shift
+				shift
+			else
+				VALIDITY="${i#*=}"
+				shift
+			fi
+			;;
+		-p|--patch|--patch=*)
+			if [[ "$1" == "-p" || "$1" == "--patch" ]]
+			then
+				PATCH_TMP="$2"
+				shift
+				shift
+			else
+				PATCH_TMP="${i#*=}"
+				shift
+			fi
+			mv /tmp/patches/${PATCH_TMP}.patch.disable /tmp/patches/${PATCH_TMP}.patch
+			if [[ "$?" != "0" ]]
+			then
+				echo "Patch not found!"
+				exit 2
+			fi
+			;;
+		-q|--no-patch|--no-patch=*)
+			if [[ "$1" == "-q" || "$1" == "--no-patch" ]]
+			then
+				PATCH_TMP="$2"
+				shift
+				shift
+			else
+				PATCH_TMP="${i#*=}"
+				shift
+			fi
+			mv /tmp/patches/${PATCH_TMP}.patch /tmp/patches/${PATCH_TMP}.patch.disable
+			if [[ "$?" != "0" ]]
+			then
+				echo "Patch not found!"
+				exit 2
+			fi
+			;;
+		-b|--list-patches)
+			echo -e '\033[0;32mEnabled patches:\033[0m'
+			find /tmp/patches/*.patch -exec basename "{}" .patch \;
+			echo -e '\033[0;31mDisabled patches:\033[0m'
+			find /tmp/patches/*.patch.disable -exec basename "{}" .patch.disable \;
+			shift
+			exit 0
+			;;
+		-x|--debug)
+			set -x
+			shift
+			;;
+		help|-h|--help|--help=*)
+			help
+			exit 6
+			;;
+		-*|--*)
+			echo "Unknown option $1"
+			help
+			exit 6
+			;;
+		app)
+			if [ "$TYPES" == "wear" ]
+			then
+				TYPES="app wear"
+			elif [ "$TYPES" == "app wear" ]
+			then
+				TYPES="app wear"
+			else
+				TYPES="app"
+			fi
+			shift
+			;;
+		wear)
+			if [ "$TYPES" == "app" ]
+			then
+				TYPES="app wear"
+			elif [ "$TYPES" == "app wear" ]
+			then
+				TYPES="app wear"
+			else
+				TYPES="wear"
+			fi
+			shift
+			;;
+		all)
+			TYPES="app wear"
+			shift
+			;;
+		bash|ash|sh)
+			$1
+			exit $?
+			;;
+		*)
+			POSITIONAL_ARGS+=("$1")
+			shift
+			;;
+	esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}"
+
+if [ "$TYPES" == "" ]
+then
+help
+exit 6
+fi
+
+BUILD_LOG=/aaps/build.log
+
+rm -f "${BUILD_LOG}"
+
+# Check to see if the keystore file exists
+# If not generate a new one with default settings
+echo -e "\tChecking if keystore exists ... \c"
+if [ ! -e "${KEYSTORE_FILE}" ]; then
+	echo "[failed]"
+	echo -e "\tGenerating a new default keystore ... \c"
+	keytool \
+		-genkey \
+		-v \
+		-keystore "${KEYSTORE_FILE}" \
+		-alias "${KEYSTORE_ALIAS}" \
+		-keyalg RSA \
+		-keysize ${KEYSIZE} \
+		-validity ${VALIDITY} \
+		-keypass "${KEYSTORE_PASSWORD}" \
+		-storepass "${KEYSTORE_PASSWORD}" \
+		-noprompt \
+		-dname "CN=, OU=, O=AndroidAPS, L=, S=, C=" &>> "${BUILD_LOG}"
+
+	if [ -e ${KEYSTORE_FILE} ]; then 
+		echo "[ok]"
+	else
+		echo "[failed]"
+		exit 1
+	fi
+else
+	echo "[ok]"
+fi
+
+cd /tmp || exit
+
+if [ ! -d AndroidAPS ]; then
+	echo -e "\tChecking out AndroidAPS from git ... \c"
+	git clone --depth 1 -b "${VERSION}" --depth 1 https://github.com/nightscout/AndroidAPS.git AndroidAPS &>> "${BUILD_LOG}"
+
+	if [ -d AndroidAPS ]; then 
+		echo "[ok]"
+	else
+		echo "[failed]"
+		exit 1
+	fi
+fi
+
+cd AndroidAPS || exit
+
+echo -e "\tApplying Patches ... \c"
+for FILE in $(find ../patches/*.patch)
+do
+	git apply < "${FILE}"
+done
+echo "[ok]"
+
+# Setup APK Tools
+if [ ! -e /usr/bin/zipalign ]; then
+	ln -s "$(find / -name zipalign)" /usr/bin/zipalign
+fi
+if [ ! -e /usr/bin/apksigner ]; then
+	ln -s "$(find / -name apksigner)" /usr/bin/apksigner
+fi
+
+for TYPE in $TYPES
+do
+	echo -e "\tBuilding Version ${TYPE} from ${VERSION} APKs (This may take some time) ... \c"
+	./gradlew :${TYPE}:assembleFullRelease
+	if [ -d ./${TYPE}/build/outputs/ ]; then
+		echo "[ok]"
+	else
+		echo "[failed]"
+		exit 1
+	fi
+
+	APK_FILES=$(find "$(pwd)/${TYPE}/build/outputs/" -name '*-release-unsigned.apk')
+
+	# Sign all the APKs
+	for apk in $APK_FILES; do
+		FILENAME=$(basename "$apk" | cut -d- -f 1-3)
+		if [ -e "${FILENAME}-aligned.apk" ]; then
+			rm "${FILENAME}-aligned.apk"
+		fi
+		if [ -e "${FILENAME}-signed.apk" ]; then
+			rm "${FILENAME}-signed.apk"
+		fi
+
+		echo -e "\tAligning ${FILENAME}.apk ... \c"
+		zipalign -v -p 4 "$apk" "${FILENAME}-aligned.apk" &>> "${BUILD_LOG}"
+		if [ -e "${FILENAME}-aligned.apk" ]; then
+			echo "[ok]"
+		else
+			echo "[failed]"
+			exit 1
+		fi
+
+		echo -e "\tSigning ${FILENAME}.apk ... \c"
+		apksigner sign \
+			--ks /aaps/"${KEYSTORE_FILE}" \
+			--ks-pass pass:"${KEYSTORE_PASSWORD}" \
+			--key-pass pass:"${KEYSTORE_PASSWORD}" \
+			--out "${FILENAME}"-signed.apk \
+			"${FILENAME}-aligned.apk" &>> "${BUILD_LOG}"
+
+		if [ -e "${FILENAME}-signed.apk" ]; then 
+			echo "[ok]"
+		else
+			echo "[failed]"
+			exit 1
+		fi
+
+		cp "${FILENAME}-signed.apk" "/aaps/AndroidAPS-${FILENAME}-signed-${VERSION}.apk"
+		chmod 777 "/aaps/AndroidAPS-${FILENAME}-signed-${VERSION}.apk"
+	done
+done
+
+echo -e "\tStarting local web server ... \c"
+httpd -k start &>> "${BUILD_LOG}"
+
+if [ $? -eq 0 ]; then
+	echo "[ok]"
+else
+	echo "[failed: ${RESULT}]"
+	exit 1
+fi
+
+echo "-----------------------"
+echo "--- Build Complete ----"
+echo "-----------------------"
+
+MACHINE_IP=$(ifconfig eth0 | grep Mask | awk '{print $2}'| cut -f2 -d:)
+
+echo ""
+echo "Installation Instrcutions:"
+for TYPE in $TYPES
+do
+	echo "Download AndroidAPS-${TYPE}-full-release-signed-${VERSION}.apk and install."
+done
+echo ""
+echo "Visit http://${MACHINE_IP}:8080/ using the phone you wish to install AndroidAPS onto."
+echo "Alternatively if it is not possible to access the files using your phone open the link in a browser on this computer, download the file and transfer to the phone."
+echo ""
+echo "When you have downloaded the apk press ctrl+c to finish."
+
+while true; do
+sleep 60
+done
+
+read UNUSED
+# 
+# while true; do
+# 
+#	 FULL_APP='/aaps/app-full-release-signed-master.apk'
+#	 NS_CLIENT='/aaps/app-nsclient2-release-signed-master.apk'
+#	 NS_CLIENT2='/aaps/app-nsclient-release-signed-master.apk'
+#	 PUMP_CONTROL='/aaps/app-pumpcontrol-release-signed-master.apk'
+#	 printf "########################################################\n"
+#	 printf "# Alternative APK Downloader:						  #\n"
+#	 printf "#   - For users unable to download APKs directly there #\n"
+#	 printf "#   - is an alterative online dowload method. Any file #\n"					#\n"
+#	 printf "#   - uploads will expire after 24 hours. Please	   #\n"
+#	 printf "#   - ensure to save downloads somewhere safe		  #\n"
+#	 printf "########################################################\n"
+#	 printf "Please read and select one of following options:\n"
+#	 printf "  1. Upload AndroidAPS full release APK\n"
+#	 printf "  2. Upload AndroidAPS nightscout client APK\n"
+#	 printf "  3. Upload AndroidAPS nightscout2 client APK\n"
+#	 printf "  4. Upload AndroidAPS pumpcontrol APK\n"
+#	 printf "  q. Quit (when you have finished  with downloads)\n"
+#	 printf "Please enter your choice [1-4q]:"
+#	 read USER_INPUT
+# 
+#	 case "${USER_INPUT}" in
+# 
+#		'1')
+#			 FILE="${FULL_APP}"
+#		;;
+#		'2')
+#			 FILE="${NS_CLIENT}"
+#		;;
+#		'3')
+#			FILE="${NS_CLIENT2}"
+#		;;
+#	   '4')
+#		   FILE="${PUMP_CONTROL}"
+#		;;
+#		'q'|'Q')
+#			break
+#		;;
+#		*)
+#		echo "Invald option, enter only one of the following options [1234q]"
+#		;;
+#	 esac
+# 
+#	 if [ ! -z "${FILE}" ]; then
+#		 echo "${FILE} is now being uploaded..."
+#		 LINK="$(curl -F file=@${FILE} https://file.io/?expires=1d | jq .link)"
+#		 if [ ! -z "${LINK}" ]; then
+#			 printf "########################################################\n"
+#			 printf "Now download your APK file at ${LINK}\n"
+#			 printf "########################################################\n"
+#			 echo "Press [Enter] when ready to continue"
+#			 read UNUSED
+#			 clear
+#		 else
+#			echo "Upload of ${FILE} Failed!!"
+#		 fi
+#	 fi
+# done
+
+exit 0
