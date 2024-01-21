@@ -15,6 +15,7 @@ function help() {
 	echo "  -P, --no-patch <patch>       Disable patch(allowOverwriteGit)"
 	echo "  -l, --list-patches <patch>   List patches"
 	echo "  -W, --no-web                 Skip the web server"
+	echo "  -v, --version                Version AAPS to build"
 	echo "  app                          Build Android App"
 	echo "  wear                         Build Android Wear App"
 	echo "  all                          Build ALL Apps"
@@ -301,7 +302,7 @@ for TYPE in $TYPES
 do
 	echo "Download AndroidAPS-${TYPE}-full-release-signed-${VERSION}.apk and install."
 done
-["$WEB" == "off"] && exit 0
+[ "$WEB" == "off" ] && exit 0
 echo ""
 echo "Visit http://${MACHINE_IP}:8080/ using the phone you wish to install AndroidAPS onto."
 echo "Alternatively if it is not possible to access the files using your phone open the link in a browser on this computer, download the file and transfer to the phone."
