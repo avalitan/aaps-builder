@@ -4,6 +4,7 @@ POSITIONAL_ARGS=()
 TYPES=""
 KEYSIZE=4096
 VALIDITY=10000
+WEB="on"
 
 
 function help() {
@@ -13,6 +14,7 @@ function help() {
 	echo "  -p, --patch <patch>          Enable patch(extractNativeLibs)"
 	echo "  -P, --no-patch <patch>       Disable patch(allowOverwriteGit)"
 	echo "  -l, --list-patches <patch>   List patches"
+	echo "  -W, --no-web                 Skip the web server"
 	echo "  app                          Build Android App"
 	echo "  wear                         Build Android Wear App"
 	echo "  all                          Build ALL Apps"
@@ -85,6 +87,10 @@ while [[ $# -gt 0 ]]; do
 			find /tmp/patches/*.patch.disable -exec basename "{}" .patch.disable \;
 			shift
 			exit 0
+			;;
+		-W|--no-web)
+			WEB="off"
+			shift
 			;;
 		-x|--debug)
 			set -x
@@ -275,6 +281,8 @@ fi
 echo "-----------------------"
 echo "--- Build Complete ----"
 echo "-----------------------"
+
+["$WEB" == "off"] && exit 0
 
 MACHINE_IP=$(ifconfig eth0 | grep Mask | awk '{print $2}'| cut -f2 -d:)
 
