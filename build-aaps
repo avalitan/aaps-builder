@@ -5,7 +5,7 @@ TYPES=""
 KEYSIZE=4096
 VALIDITY=10000
 WEB="on"
-
+BUILD_ERROR=""
 
 function help() {
 	echo "Options:"
@@ -16,6 +16,8 @@ function help() {
 	echo "  -l, --list-patches <patch>   List patches"
 	echo "  -W, --no-web                 Skip the web server"
 	echo "  -v, --version                Version AAPS to build"
+	echo "  -b, --fix-build-error                Fix Build Error"
+	echo "  -B, -no--fix-build-error                Don't fix build error"
 	echo "  app                          Build Android App"
 	echo "  wear                         Build Android Wear App"
 	echo "  all                          Build ALL Apps"
@@ -104,6 +106,14 @@ while [[ $# -gt 0 ]]; do
 			WEB="off"
 			shift
 			;;
+		-b|--fix-build-error)
+			BUILD_ERROR="fix"
+			shift
+			;;
+		-B|-no--fix-build-error)
+			BUILD_ERROR="no-fix"
+			shift
+			;;
 		-x|--debug)
 			set -x
 			shift
@@ -121,9 +131,11 @@ while [[ $# -gt 0 ]]; do
 			if [ "$TYPES" == "wear" ]
 			then
 				TYPES="app wear"
+				[ "$BUILD_ERROR" == "no-fix" ] || BUILD_ERROR="fix"
 			elif [ "$TYPES" == "app wear" ]
 			then
 				TYPES="app wear"
+				[ "$BUILD_ERROR" == "no-fix" ] || BUILD_ERROR="fix"
 			else
 				TYPES="app"
 			fi
@@ -133,9 +145,11 @@ while [[ $# -gt 0 ]]; do
 			if [ "$TYPES" == "app" ]
 			then
 				TYPES="app wear"
+				[ "$BUILD_ERROR" == "no-fix" ] || BUILD_ERROR="fix"
 			elif [ "$TYPES" == "app wear" ]
 			then
 				TYPES="app wear"
+				[ "$BUILD_ERROR" == "no-fix" ] || BUILD_ERROR="fix"
 			else
 				TYPES="wear"
 			fi
@@ -143,6 +157,7 @@ while [[ $# -gt 0 ]]; do
 			;;
 		all)
 			TYPES="app wear"
+			[ "$BUILD_ERROR" == "no-fix" ] || BUILD_ERROR="fix"
 			shift
 			;;
 		bash|ash|sh)
@@ -212,6 +227,8 @@ if [ ! -d AndroidAPS ]; then
 fi
 
 cd AndroidAPS || exit
+
+[ "$BUILD_ERROR" == "fix" ] && sed -i 's/!allCommitted()/false/g' app/build.gradle.kts
 
 echo -e "\tApplying Patches ... \c"
 for FILE in $(find ../patches/*.patch 2>/dev/null)
