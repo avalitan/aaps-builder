@@ -11,8 +11,8 @@ function help() {
 	echo "  -k, --keysize <size>         Key bit size"
 	echo "  -v, --validity <days>        Validity number of days"
 	echo "  -p, --patch <patch>          Enable patch(extractNativeLibs)"
-	echo "  -q, --no-patch <patch>       Disable patch(allowOverwriteGit)"
-	echo "  -b, --list-patches <patch>   List patches"
+	echo "  -P, --no-patch <patch>       Disable patch(allowOverwriteGit)"
+	echo "  -l, --list-patches <patch>   List patches"
 	echo "  app                          Build Android App"
 	echo "  wear                         Build Android Wear App"
 	echo "  all                          Build ALL Apps"
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
 				exit 2
 			fi
 			;;
-		-q|--no-patch|--no-patch=*)
+		-P|--no-patch|--no-patch=*)
 			if [[ "$1" == "-q" || "$1" == "--no-patch" ]]
 			then
 				PATCH_TMP="$2"
@@ -78,7 +78,7 @@ while [[ $# -gt 0 ]]; do
 				exit 2
 			fi
 			;;
-		-b|--list-patches)
+		-l|--list-patches)
 			echo -e '\033[0;32mEnabled patches:\033[0m'
 			find /tmp/patches/*.patch -exec basename "{}" .patch \;
 			echo -e '\033[0;31mDisabled patches:\033[0m'
