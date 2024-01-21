@@ -202,7 +202,7 @@ fi
 cd AndroidAPS || exit
 
 echo -e "\tApplying Patches ... \c"
-for FILE in $(find ../patches/*.patch)
+for FILE in $(find ../patches/*.patch 2>/dev/null)
 do
 	git apply < "${FILE}"
 done
