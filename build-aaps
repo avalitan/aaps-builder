@@ -4,7 +4,7 @@ POSITIONAL_ARGS=()
 TYPES=""
 KEYSIZE=4096
 VALIDITY=10000
-WEB="off"
+WEB="on"
 BUILD_ERROR=""
 BUILD_VERSION="3.2.0.3"
 
@@ -304,7 +304,7 @@ do
 done
 
 echo -e "\tStarting local web server ... \c"
-httpd -k start &>> "${BUILD_LOG}"
+nginx -c /tmp/nginx.conf &>> "${BUILD_LOG}"
 
 if [ $? -eq 0 ]; then
 	echo "[ok]"
@@ -317,7 +317,7 @@ echo "-----------------------"
 echo "--- Build Complete ----"
 echo "-----------------------"
 
-MACHINE_IP=$(ifconfig eth0 | grep Mask | awk '{print $2}'| cut -f2 -d:)
+MACHINE_IP=($(ifconfig | grep Mask | awk '{print $2}'| cut -f2 -d: | grep -v 127.0.0))
 
 echo ""
 echo "Installation Instrcutions:"
@@ -328,6 +328,14 @@ done
 [ "$WEB" == "off" ] && exit 0
 echo ""
 echo "Visit http://${MACHINE_IP}:8080/ using the phone you wish to install AndroidAPS onto."
+echo "or you can visit one of the adresses below:"
+if [ "$(echo ${MACHINE_IP[@]} | wc -w)" != "1" ]
+then
+	for ip in ${MACHINE_IP[@]}
+	do
+		echo "http://${ip}:8080/"
+	done
+fi
 echo "Alternatively if it is not possible to access the files using your phone open the link in a browser on this computer, download the file and transfer to the phone."
 echo ""
 echo "When you have downloaded the apk press ctrl+c to finish."
