@@ -282,8 +282,6 @@ echo "-----------------------"
 echo "--- Build Complete ----"
 echo "-----------------------"
 
-["$WEB" == "off"] && exit 0
-
 MACHINE_IP=$(ifconfig eth0 | grep Mask | awk '{print $2}'| cut -f2 -d:)
 
 echo ""
@@ -292,6 +290,7 @@ for TYPE in $TYPES
 do
 	echo "Download AndroidAPS-${TYPE}-full-release-signed-${VERSION}.apk and install."
 done
+["$WEB" == "off"] && exit 0
 echo ""
 echo "Visit http://${MACHINE_IP}:8080/ using the phone you wish to install AndroidAPS onto."
 echo "Alternatively if it is not possible to access the files using your phone open the link in a browser on this computer, download the file and transfer to the phone."
