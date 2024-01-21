@@ -4,7 +4,7 @@ POSITIONAL_ARGS=()
 TYPES=""
 KEYSIZE=4096
 VALIDITY=10000
-WEB="on"
+WEB="off"
 BUILD_ERROR=""
 
 function help() {
@@ -14,10 +14,11 @@ function help() {
 	echo "  -p, --patch <patch>          Enable patch(extractNativeLibs)"
 	echo "  -P, --no-patch <patch>       Disable patch(allowOverwriteGit)"
 	echo "  -l, --list-patches <patch>   List patches"
+	echo "  -w, --web                    Run the web server"
 	echo "  -W, --no-web                 Skip the web server"
 	echo "  -v, --version                Version AAPS to build"
-	echo "  -b, --fix-build-error                Fix Build Error"
-	echo "  -B, -no--fix-build-error                Don't fix build error"
+	echo "  -b, --fix-build-error        Fix Build Error"
+	echo "  -B, -no--fix-build-error     Don't fix build error"
 	echo "  app                          Build Android App"
 	echo "  wear                         Build Android Wear App"
 	echo "  all                          Build ALL Apps"
@@ -104,6 +105,10 @@ while [[ $# -gt 0 ]]; do
 			;;
 		-W|--no-web)
 			WEB="off"
+			shift
+			;;
+		-w|--web)
+			WEB="on"
 			shift
 			;;
 		-b|--fix-build-error)
