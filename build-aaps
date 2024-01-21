@@ -6,11 +6,12 @@ KEYSIZE=4096
 VALIDITY=10000
 WEB="off"
 BUILD_ERROR=""
+BUILD_VERSION="3.2.0.3"
 
 function help() {
 	echo "Options:"
 	echo "  -k, --keysize <size>         Key bit size"
-	echo "  -v, --validity <days>        Validity number of days"
+	echo "  -V, --validity <days>        Validity number of days"
 	echo "  -p, --patch <patch>          Enable patch(extractNativeLibs)"
 	echo "  -P, --no-patch <patch>       Disable patch(allowOverwriteGit)"
 	echo "  -l, --list-patches <patch>   List patches"
@@ -18,7 +19,7 @@ function help() {
 	echo "  -W, --no-web                 Skip the web server"
 	echo "  -v, --version                Version AAPS to build"
 	echo "  -b, --fix-build-error        Fix Build Error"
-	echo "  -B, -no--fix-build-error     Don't fix build error"
+	echo "  -B, --no-fix-build-error     Don't fix build error"
 	echo "  app                          Build Android App"
 	echo "  wear                         Build Android Wear App"
 	echo "  all                          Build ALL Apps"
@@ -39,7 +40,7 @@ while [[ $# -gt 0 ]]; do
 				shift
 			fi
 			;;
-		-v|--validity|--validity=*)
+		-V|--validity|--validity=*)
 			if [[ "$1" == "-v" || "$1" == "--validity" ]]
 			then
 				VALIDITY="$2"
@@ -95,11 +96,11 @@ while [[ $# -gt 0 ]]; do
 		-v|--version|--version=*)
 			if [[ "$1" == "-v" || "$1" == "--version" ]]
 			then
-				VERSION="$2"
+				BUILD_VERSION="$2"
 				shift
 				shift
 			else
-				VERSION="${i#*=}"
+				BUILD_VERSION="${i#*=}"
 				shift
 			fi
 			;;
@@ -115,7 +116,7 @@ while [[ $# -gt 0 ]]; do
 			BUILD_ERROR="fix"
 			shift
 			;;
-		-B|-no--fix-build-error)
+		-B|--no-fix-build-error)
 			BUILD_ERROR="no-fix"
 			shift
 			;;
@@ -221,7 +222,7 @@ cd /tmp || exit
 
 if [ ! -d AndroidAPS ]; then
 	echo -e "\tChecking out AndroidAPS from git ... \c"
-	git clone --depth 1 -b "${VERSION}" --depth 1 https://github.com/nightscout/AndroidAPS.git AndroidAPS &>> "${BUILD_LOG}"
+	git clone --depth 1 -b "${BUILD_VERSION}" --depth 1 https://github.com/nightscout/AndroidAPS.git AndroidAPS &>> "${BUILD_LOG}"
 
 	if [ -d AndroidAPS ]; then 
 		echo "[ok]"
@@ -252,8 +253,8 @@ fi
 
 for TYPE in $TYPES
 do
-	echo -e "\tBuilding Version ${TYPE} from ${VERSION} APKs (This may take some time) ... \c"
-	./gradlew :${TYPE}:assembleFullRelease
+	echo -e "\tBuilding Version ${TYPE} from ${BUILD_VERSION} APKs (This may take some time) ... \c"
+	./gradlew :${TYPE}:assembleFullRelease &>> "${BUILD_LOG}"
 	if [ -d ./${TYPE}/build/outputs/ ]; then
 		echo "[ok]"
 	else
@@ -297,8 +298,8 @@ do
 			exit 1
 		fi
 
-		cp "${FILENAME}-signed.apk" "/aaps/AndroidAPS-${FILENAME}-signed-${VERSION}.apk"
-		chmod 777 "/aaps/AndroidAPS-${FILENAME}-signed-${VERSION}.apk"
+		cp "${FILENAME}-signed.apk" "/aaps/AndroidAPS-${FILENAME}-signed-${BUILD_VERSION}.apk"
+		chmod 777 "/aaps/AndroidAPS-${FILENAME}-signed-${BUILD_VERSION}.apk"
 	done
 done
 
@@ -322,7 +323,7 @@ echo ""
 echo "Installation Instrcutions:"
 for TYPE in $TYPES
 do
-	echo "Download AndroidAPS-${TYPE}-full-release-signed-${VERSION}.apk and install."
+	echo "Download AndroidAPS-${TYPE}-full-release-signed-${BUILD_VERSION}.apk and install."
 done
 [ "$WEB" == "off" ] && exit 0
 echo ""
