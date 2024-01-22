@@ -333,15 +333,17 @@ if [ "$(echo ${MACHINE_IP[@]} | wc -w)" != "1" ]
 then
 	for ip in ${MACHINE_IP[@]}
 	do
+		qrencode -t ansiutf8 <<< "http://${ip}:8080/"
 		echo "http://${ip}:8080/"
+		echo ''
 	done
 fi
 echo "Alternatively if it is not possible to access the files using your phone open the link in a browser on this computer, download the file and transfer to the phone."
 echo ""
 echo "When you have downloaded the apk press ctrl+c to finish."
 
-while true; do
-sleep 60
+while sleep 60; do
+echo -n ''
 done
 
 read UNUSED
