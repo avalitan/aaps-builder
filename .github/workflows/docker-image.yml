@@ -23,4 +23,4 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         push: true
-        tags: avalitan/aaps-builder:latest, avalitan/aaps-builder:${{ release.name }}
+        tags: avalitan/aaps-builder:latest, avalitan/aaps-builder:${{ github.ref }}
