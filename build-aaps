@@ -6,7 +6,7 @@ KEYSIZE=4096
 VALIDITY=10000
 WEB="on"
 BUILD_ERROR=""
-BUILD_VERSION="3.2.0.3"
+BUILD_VERSION="3.2.0.4"
 
 function help() {
 	echo "Options:"
