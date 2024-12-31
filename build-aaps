@@ -254,7 +254,7 @@ fi
 
 for TYPE in $TYPES
 do
-	echo -e "\tBuilding Version ${TYPE} from ${BUILD_VERSION} APKs (This may take some time) ... \c"
+	echo -e "\tBuilding Version ${TYPE} from ${BUILD_VERSION} APKs (This WILL take some time) ... \c"
 	./gradlew :${TYPE}:assembleFullRelease &>> "${BUILD_LOG}"
 	if [ -d ./${TYPE}/build/outputs/ ]; then
 		echo "[ok]"
