@@ -222,7 +222,7 @@ fi
 cd /tmp || exit
 
 if [ ! -d AndroidAPS ]; then
-	echo -e "\tChecking out AndroidAPS from git ... \c"
+	echo -e "\tChecking out AndroidAPS(${BUILD_VERSION}) from git ... \c"
 	git clone --depth 1 -b "${BUILD_VERSION}" --depth 1 https://github.com/nightscout/AndroidAPS.git AndroidAPS &>> "${BUILD_LOG}"
 
 	if [ -d AndroidAPS ]; then 
