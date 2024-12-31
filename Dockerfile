@@ -1,4 +1,6 @@
-ENV JDK_VERSION=21
+FROM alvrme/alpine-android-base:jdk21
+LABEL maintainer="Avalitan <avalitan.docker.aaps@avalitan.com>"
+
 ENV TARGET_SDK=35
 ENV BUILD_TOOLS=35.0.0
 
@@ -6,9 +8,6 @@ ENV KEYSTORE_FILE=keystore
 ENV KEYSTORE_PASSWORD=AndroidAPS
 ENV KEYSTORE_ALIAS=key0
 ENV VERSION=master
-
-FROM alvrme/alpine-android-base:jdk${JDK_VERSION}
-LABEL maintainer="Avalitan <avalitan.docker.aaps@avalitan.com>"
 
 VOLUME [ "/aaps" ]
 WORKDIR /aaps
