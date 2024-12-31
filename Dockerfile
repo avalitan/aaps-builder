@@ -19,7 +19,7 @@ COPY nginx.conf /tmp
 # Install a local webserver and link to the APK output
 # folder so users can navigate and install APKs directly
 # from their phones after the build process is finished.
-RUN apk add --no-cache nginx libqrencode && rm -rf /var/www/localhost/htdocs && ln -s -f /aaps/ /var/www/localhost/htdocs #&& sed -i 's/Listen 80/Listen 8080/g' /etc/apache2/httpd.conf
+RUN apk add --no-cache nginx libqrencode libqrencode-tools && rm -rf /var/www/localhost/htdocs && ln -s -f /aaps/ /var/www/localhost/htdocs #&& sed -i 's/Listen 80/Listen 8080/g' /etc/apache2/httpd.conf
 
 ENV PATH=$PATH:${ANDROID_SDK_ROOT}/build-tools/${BUILD_TOOLS}
 
