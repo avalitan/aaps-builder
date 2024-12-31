@@ -1,4 +1,4 @@
-FROM alvrme/alpine-android-base:jdk17
+FROM alvrme/alpine-android-base:jdk21
 LABEL maintainer="Avalitan <avalitan.docker.aaps@avalitan.com>"
 
 ENV KEYSTORE_FILE=keystore
