@@ -5,6 +5,6 @@ Builds AndroidAPS from source.
 
 ## How To
 ### Linux
-> docker run --network host --mount type=bind,source="$(pwd)",target=/aaps -it --rm -p 8080:8080 avalitan/aaps-builder:v1.0.6 --version 3.3.0.0 all
+> docker run --network host --mount type=bind,source="$(pwd)",target=/aaps -it --rm -p 8080:8080 avalitan/aaps-builder:v1.0.6 --version 3.3.2.1 all
 ### Windows
 - Still need to figure this out
