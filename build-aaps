@@ -321,7 +321,7 @@ echo "-----------------------"
 MACHINE_IP=($(ifconfig | grep Mask | awk '{print $2}'| cut -f2 -d: | grep -v 127.0.0))
 
 echo ""
-echo "Installation Instrcutions:"
+echo "Installation Instructions:"
 for TYPE in $TYPES
 do
 	echo "Download AndroidAPS-${TYPE}-full-release-signed-${BUILD_VERSION}.apk and install."
